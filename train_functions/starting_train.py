@@ -2,9 +2,11 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
+import numpy as np
 
 
-def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval):
+
+def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval, label_dict):
     """
     Trains and evaluates a model.
 
@@ -27,9 +29,11 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval):
         val_dataset, batch_size=batch_size, shuffle=True
     )
 
+
     # Initalize optimizer (for gradient descent) and loss function
     optimizer = optim.Adam(model.parameters())
     loss_fn = nn.CrossEntropyLoss()
+
 
     step = 0
     for epoch in range(epochs):
@@ -38,18 +42,39 @@ def starting_train(train_dataset, val_dataset, model, hyperparameters, n_eval):
         # Loop over each batch in the dataset
         for batch in tqdm(train_loader):
             # TODO: Backpropagation and gradient descent
+            y_hat = model(batch[0])
+            labels = batch[1]
+            y = torch.zeros(batch_size, dtype=torch.long)
+            for i, s in enumerate(labels):
 
+                y[i] = label_dict[s]
+
+
+
+
+            loss = loss_fn(y_hat, y)
+            loss.backward()
+            optimizer.step()
             # Periodically evaluate our model + log to Tensorboard
             if step % n_eval == 0:
                 # TODO:
                 # Compute training loss and accuracy.
                 # Log the results to Tensorboard.
 
+                pred = np.zeros(y_hat.shape[0])
+                for i in range(y_hat.shape[0]):
+                    pred[i] = torch.argmax(y_hat[i]) + 1
+
+                accuracy = compute_accuracy(pred, y)
+                print("Accuracy after {0} step: {1}".format(step, accuracy))
+
+
                 # TODO:
                 # Compute validation loss and accuracy.
                 # Log the results to Tensorboard.
                 # Don't forget to turn off gradient calculations!
-                evaluate(val_loader, model, loss_fn)
+
+                # evaluate(val_loader, model, loss_fn)
 
             step += 1
 
@@ -68,7 +93,11 @@ def compute_accuracy(outputs, labels):
         0.75
     """
 
-    n_correct = (torch.round(outputs) == labels).sum().item()
+    n_correct = 0
+
+    for i in range(len(outputs)):
+        if outputs[i]==labels[i]:
+            n_correct += 1
     n_total = len(outputs)
     return n_correct / n_total
 
@@ -79,4 +108,6 @@ def evaluate(val_loader, model, loss_fn):
 
     TODO!
     """
-    pass
+    y_hat = model(val_loader)
+    loss = loss_fn(y_hat, [row[1] for row in val_loader])
+    return loss, compute_accuracy(y_hat, [row[1] for row in val_loader])
