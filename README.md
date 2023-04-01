@@ -1,3 +1,7 @@
+# Overview
+
+This goal of this project is to train a neural network model that accurately identifies species of whales given images of their tails. The challenge of this task is that there are over 5000 different classes of whale species, with little training images for each species. 
+
 # ACM AI Projects Skeleton Code
 
 ## Setup
